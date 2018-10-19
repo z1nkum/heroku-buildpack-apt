@@ -33,19 +33,26 @@ APT_CACHE_DIR="$CACHE_DIR/apt/cache"
 APT_STATE_DIR="$CACHE_DIR/apt/state"
 APT_SOURCELIST_DIR="$CACHE_DIR/apt/sources"   # place custom sources.list here
 
+if [ -f "$APT_CACHE_DIR/Stackfile" ]; then
+  APT_CACHE_STACK=$(cat "$APT_CACHE_DIR/Stackfile" )
+else
+  APT_CACHE_STACK="$STACK"
+fi
+
 APT_SOURCES="$APT_SOURCELIST_DIR/sources.list"
 
-if [ -f $APT_CACHE_DIR/Aptfile ] && cmp -s $BUILD_DIR/Aptfile $APT_CACHE_DIR/Aptfile ; then
+if [ -f $APT_CACHE_DIR/Aptfile ] && [[ "$STACK" != "$APT_CACHE_STACK" ]] && cmp -s $BUILD_DIR/Aptfile $APT_CACHE_DIR/Aptfile ; then
   # Old Aptfile is the same as new
   topic "Reusing cache"
 else
-  # Aptfile changed or does not exist
+  # Aptfile/Stack changed or does not exist
   topic "Detected Aptfile changes, flushing cache"
   rm -rf $APT_CACHE_DIR
   mkdir -p "$APT_CACHE_DIR/archives/partial"
   mkdir -p "$APT_STATE_DIR/lists/partial"
   mkdir -p "$APT_SOURCELIST_DIR"   # make dir for sources
   cp -f "$BUILD_DIR/Aptfile" "$APT_CACHE_DIR/Aptfile"
+  echo "$STACK" > "$APT_CACHE_DIR/Stackfile" # Remember stack
   cat "/etc/apt/sources.list" > "$APT_SOURCES"    # no cp here
   # add custom repositories from Aptfile to sources.list
   # like>>    :repo:deb http://cz.archive.ubuntu.com/ubuntu artful main universe
@@ -96,7 +103,7 @@ EOF
 
 # Regex patterns (colon-delimited) to check for LD_LIBRARY_PATH
 # "/app" will be substituted with $BUILD_DIR during build and $HOME on deploy
-LD_LIBRARY_REGEX_PATTERNS="${LD_LIBRARY_REGEX_PATTERNS:+$LD_LIBRARY_REGEX_PATTERNS:}"'/app/\.apt/(usr/)?lib(/[^/]*)?'
+LD_LIBRARY_REGEX_PATTERNS="${LD_LIBRARY_REGEX_PATTERNS:+$LD_LIBRARY_REGEX_PATTERNS:}"'/app/\.apt/(usr/)?lib(/(x86_64|i386)-linux-gnu)?(/[^/]*)?'
 
 # Find directories under $BUILD_DIR/.apt matching given regex patterns
 # Concatenate non-interpolated paths into LD_LIBRARY_PATH_BUILD
