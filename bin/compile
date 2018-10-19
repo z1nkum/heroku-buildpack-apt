@@ -118,15 +118,15 @@ PATH_BUILD=$(find "${BUILD_DIR}/.apt" -maxdepth 2 -type d \( -name "bin" -o -nam
 
 # Insert our complete "BUILD" variables into the profile script
 for build_var in PATH_BUILD LD_LIBRARY_PATH_BUILD; do
-  sed -ie "1i${build_var}=\"${!build_var}\"" ${PROFILE_PATH}
+  sed -i "1i${build_var}=\"${!build_var}\"" ${PROFILE_PATH}
 done
 
 # Execute profile script so we have the updated variables
 source ${PROFILE_PATH}
 
-# Replace '$BUILD_DIR' with '$HOME' in profile script (again, NOT interpolated)
+# Replace '${BUILD_DIR}' with '${HOME}' in profile script (again, NOT interpolated)
 # This will be executed (and variables interpolated) on deploy
-sed -i 's/\bBUILD_DIR\b/HOME/g' ${PROFILE_PATH}
+sed -i 's/${BUILD_DIR}/${HOME}/g' ${PROFILE_PATH}
 
 #give environment to later buildpacks
 export | grep -E -e ' (PATH|LD_LIBRARY_PATH|LIBRARY_PATH|INCLUDE_PATH|CPATH|CPPPATH|PKG_CONFIG_PATH)='  > "$LP_DIR/export"
