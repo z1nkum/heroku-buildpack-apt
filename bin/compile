@@ -105,17 +105,8 @@ export PKG_CONFIG_PATH="${BUILD_DIR}/.apt/usr/lib/x86_64-linux-gnu/pkgconfig:${B
 export CPATH="${INCLUDE_PATH}" CPPPATH="${INCLUDE_PATH}"
 EOF
 
-# Regex patterns (colon-delimited) to check for LD_LIBRARY_PATH
-# "/app" will be substituted with $BUILD_DIR during build and $HOME on deploy
-LD_LIBRARY_REGEX_PATTERNS="${LD_LIBRARY_REGEX_PATTERNS:+$LD_LIBRARY_REGEX_PATTERNS:}"'/app/\.apt/(usr/)?lib(/(x86_64|i386)-linux-gnu)?(/[^/]*)?'
-
-# Find directories under $BUILD_DIR/.apt matching given regex patterns
-# Concatenate non-interpolated paths into LD_LIBRARY_PATH_BUILD
-LD_LIBRARY_PATH_BUILD="${LD_LIBRARY_PATH_BUILD:+$LD_LIBRARY_PATH_BUILD:}"
-for FIND_PATH_PATTERN in $(echo -e ${LD_LIBRARY_REGEX_PATTERNS//':'/"\n"}); do
-  FIND_PATH_PATTERN=${FIND_PATH_PATTERN/#'/app'/"${BUILD_DIR}"}
-  LD_LIBRARY_PATH_BUILD+=$(find "${BUILD_DIR}/.apt" -type d -regextype 'posix-extended' -regex "${FIND_PATH_PATTERN}" -printf "\${BUILD_DIR}/.apt/%P:")
-done
+# Find directories under $BUILD_DIR/.apt containing a ".so" or ".a" file
+LD_LIBRARY_PATH_BUILD=$(find ${BUILD_DIR}/.apt -type d -print0 | xargs -0 -I _path find "_path" -maxdepth 1 \( -name '*.so*' -o -name '*.a' \) -execdir echo _path: '{}' \+ | grep -o -e '^[^:]*' | sed s/"^${BUILD_DIR//\//\\/}"/'${BUILD_DIR}'/ | xargs printf '%s:')
 
 # Include "bin|sbin" paths into $PATH
 PATH_BUILD=$(find "${BUILD_DIR}/.apt" -maxdepth 2 -type d \( -name "bin" -o -name "sbin" \) -printf "\${BUILD_DIR}/.apt/%P:")
