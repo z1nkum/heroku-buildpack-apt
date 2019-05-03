@@ -79,7 +79,7 @@ for PACKAGE in $(cat $BUILD_DIR/Aptfile | grep -v -s -e "^:repo:"); do
     curl -s -L -z $PACKAGE_FILE -o $PACKAGE_FILE $PACKAGE 2>&1 | indent
   else
     topic "Fetching .debs for $PACKAGE"
-    DEBIAN_FRONTEND=noninteractive apt-get $APT_OPTIONS -y -d install --reinstall $PACKAGE | indent
+    DEBIAN_FRONTEND=noninteractive apt-get $APT_OPTIONS -y install --reinstall $PACKAGE | indent
   fi
 done
 
@@ -87,7 +87,7 @@ mkdir -p $BUILD_DIR/.apt
 
 for DEB in $(ls -1 $APT_CACHE_DIR/archives/*.deb); do
   topic "Installing $(basename $DEB)"
-  dpkg -x $DEB $BUILD_DIR/.apt/
+  dpkg --debug=100 -x $DEB $BUILD_DIR/.apt/
 done
 
 topic "Writing profile script"
